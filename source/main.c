@@ -1,11 +1,11 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include "../headers/utils.h"
+#include "../headers/globals.h"
+#include "../headers/error.h"
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        printf("Usage: %s <filename (without extension)>\n", argv[0]);
+    if (argc < MIN_PARAM) {
+        // printf("Usage: %s <filename (without extension)>\n", argv[0]);
+        print_system_error(ERROR_CODE_1);
         return 1;
     }
 
