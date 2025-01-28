@@ -75,7 +75,7 @@ void pre_assembler(const char *filename) {
     char new_filename[256];
     strncpy(new_filename, filename, len - 3);
     new_filename[len - 3] = '\0';
-    strcat(new_filename, ".ad");
+    strcat(new_filename, ".am");
 
     FILE *input_file = fopen(filename, "r");
     FILE *output_file = fopen(new_filename, "w");
@@ -141,7 +141,7 @@ const char *load_file(int argc, char *filename) {
     return filename_with_extension;
 }
 
-// פונקציה שבודקת את מספר השורות בקובץ .ad ויוצרת קובץ .ah עם מספר השורות
+// פונקציה שבודקת את מספר השורות בקובץ .am ויוצרת קובץ .temp עם מספר השורות
 void check_the_file(const char *filename_ad) {
     FILE *file = fopen(filename_ad, "r");
     if (!file) {
@@ -156,13 +156,13 @@ void check_the_file(const char *filename_ad) {
     }
     fclose(file);
 
-    // יצירת שם הקובץ עם סיומת .ah
+    // יצירת שם הקובץ עם סיומת .temp
     char filename_ah[256];
     strncpy(filename_ah, filename_ad, strlen(filename_ad) - 3);
     filename_ah[strlen(filename_ad) - 3] = '\0';
-    strcat(filename_ah, ".ah");
+    strcat(filename_ah, ".temp");
 
-    // כתיבת מספר השורות לקובץ .ah
+    // כתיבת מספר השורות לקובץ .temp
     FILE *file_ah = fopen(filename_ah, "w");
     if (!file_ah) {
         printf("Error: Unable to open %s for writing.\n", filename_ah);
