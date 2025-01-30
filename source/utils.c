@@ -63,7 +63,7 @@ void remove_extra_spaces(char *line) {
         i++;
     }
 
-    for (; line[i] != '\0'; i++) {
+    for (; line[i] != '\0' && line[i] != '\n' ; i++) {
         if (line[i] != ' ') {
             line[j++] = line[i];
             in_space = 0;
@@ -72,7 +72,12 @@ void remove_extra_spaces(char *line) {
             in_space = 1;
         }
     }
-    line[j] = '\0';
+    if(line[j-1] == ' '){
+        line[j-1] = '\0';
+    }else{
+        line[j] = '\0';
+    }
+    
 }
 
 int is_empty_line(const char *line) {
@@ -121,6 +126,11 @@ void pre_assembler(const char *filename) {
     while (fgets(line, sizeof(line), input_file)) {
         remove_extra_spaces(line);
         line[strcspn(line, "\n")] = '\0';  // הסרת תו סוף שורה
+
+         // 🔹 בדיקת הערות – אם השורה מתחילה ב-";" דלג עליה
+        if (line[0] == ';') {
+            continue;
+        }
 
         // בדיקה אם השורה ריקה
         if (is_empty_line(line)) {
