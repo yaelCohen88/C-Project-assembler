@@ -6,26 +6,28 @@
 int main(int argc, char *argv[]) {
     //check if the user added one or more assembly files .as
     if (argc < 2) {
-        printf("Usage: %s <filename (without extension)>\n", argv[0]);
+        printf("Usage: %s <filename (without extension1)>\n", argv[0]);
         return 1;
     }
 
     //work on the files one by one
     for (int i = 1; i < argc; i++) {
 
-        const char *as_file = load_file(argc, argv[i]);
+        char *as_file = load_file(argv[i]);
         if (as_file != NULL) {
             // יוצרים את הקובץ .am
             pre_assembler(as_file);
+            free(as_file);
 
             // בודקים את הקובץ .am ומייצרים קובץ .temp
-            char filename_ad[256];
-            snprintf(filename_ad, sizeof(filename_ad), "test-files/%s.am", argv[i]);
-            check_the_file(filename_ad);
+            char filename_am[256];
+            snprintf(filename_am, sizeof(filename_am), "test-files/%s.am", argv[i]);
+            check_the_file(filename_am);
         } else {
             printf("in main not found\n");
             printf("File %s.as not found.\n", argv[i]);
         }
+        free_macros();
     }
 
     return 0;

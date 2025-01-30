@@ -7,7 +7,7 @@ TARGET = assembler
 CC = gcc
 
 # דגלי קומפילציה (כולל את הנתיב של קבצי ההדרים)
-CFLAGS = -Wall -ansi -pedantic -std=c11 -Iinclude
+CFLAGS = -Wall -ansi -pedantic -std=c11 -g -Iinclude 
 
 # כל קבצי המקור (source files)
 SRC = source/main.c source/utils.c
