@@ -15,6 +15,7 @@ int main(int argc, char *argv[]) {
     //work on the files one by one
     for (i = 1; i < argc; i++) {
 
+
         as_file = load_file(argc, argv[i]);
         if (as_file != NULL) {
             // יוצרים את הקובץ .am
