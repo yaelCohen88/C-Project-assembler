@@ -1,5 +1,6 @@
 #include "../headers/error.h"
 #include "../headers/globals.h"
+
 error errors[]={
     {ERROR_CODE_0, "No error found"},
     {ERROR_CODE_1, "No files entered, can't run program"},
