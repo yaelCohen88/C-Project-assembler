@@ -185,6 +185,7 @@ void pre_assembler(const char *filename) {
 
 // טעינת קובץ עם הקצאה דינאמית
 char *load_file(char *filename) {
+
     char *filename_with_extension = (char *)malloc(strlen("test-files/") + strlen(filename) + strlen(".as") + 1);
     if (!filename_with_extension) {
         printf("Error: Memory allocation failed.\n");
@@ -252,4 +253,5 @@ void free_macros() {
 
         current = next;
     }
+    head = NULL;
 }
