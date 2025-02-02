@@ -4,35 +4,51 @@
 #include <ctype.h>
 #include "../headers/utils.h"
 
-Macro macros[MAX_MACROS];
-int macro_count = 0;
+Macro *head = NULL;  // מצביע לראש הרשימה
 
 // הוספת מקרו לטבלה
-void add_macro(const char *name, char content[MAX_LINES_PER_MACRO][MAX_LINE_LENGTH], int line_count)
-{
-    if (macro_count < MAX_MACROS)
-    {
-        strncpy(macros[macro_count].name, name, sizeof(macros[macro_count].name));
-        macros[macro_count].line_count = line_count;
-        for (int i = 0; i < line_count; i++)
-        {
-            strncpy(macros[macro_count].content[i], content[i], MAX_LINE_LENGTH);
+void add_macro(const char *name, char **content, int line_count) {
+    Macro *new_macro = (Macro *)malloc(sizeof(Macro));
+    if (!new_macro) {
+        printf("Memory allocation failed!\n");
+        exit(1);
+    }
+    new_macro->name = strdup(name);
+    new_macro->line_count = line_count;
+    new_macro->next = NULL;
+
+    new_macro->content = (char **)malloc(line_count * sizeof(char *));
+    if (!new_macro->content) {
+        printf("Memory allocation failed!\n");
+        free(new_macro->name);
+        free(new_macro);
+        exit(1);
+    }
+
+    for (int i = 0; i < line_count; i++) {
+        new_macro->content[i] = strdup(content[i]);
+    }
+
+    // הוספה לרשימה המקושרת (לסוף)
+    if (!head) {
+        head = new_macro;
+    } else {
+        Macro *current = head;
+        while (current->next) {
+            current = current->next;
         }
-        macro_count++;
+        current->next = new_macro;
     }
 }
 
 // חיפוש מקרו לפי שם
-Macro *find_macro(const char *name)
-{
-
-    for (int i = 0; i < macro_count; i++)
-    {
-
-        if (strncmp(macros[i].name, name, strlen(macros[i].name)) == 0)
-        {
-            return &macros[i];
+Macro *find_macro(const char *name) {
+    Macro *current = head;
+    while (current) {
+        if (strcmp(current->name, name) == 0) {
+            return current;
         }
+        current = current->next;
     }
     return NULL;
 }
@@ -49,10 +65,8 @@ void remove_extra_spaces(char *line)
         i++;
     }
 
-    for (; line[i] != '\0'; i++)
-    {
-        if (line[i] != ' ')
-        {
+    for (; line[i] != '\0' && line[i] != '\n' ; i++) {
+        if (line[i] != ' ') {
             line[j++] = line[i];
             in_space = 0;
         }
@@ -62,7 +76,12 @@ void remove_extra_spaces(char *line)
             in_space = 1;
         }
     }
-    line[j] = '\0';
+    if(line[j-1] == ' '){
+        line[j-1] = '\0';
+    }else{
+        line[j] = '\0';
+    }
+    
 }
 
 int is_empty_line(const char *line)
@@ -89,7 +108,11 @@ void pre_assembler(const char *filename)
         return;
     }
 
-    char new_filename[256];
+    char *new_filename = (char *)malloc(strlen(filename) + 4);
+    if (!new_filename) {
+        printf("Memory allocation failed.\n");
+        return;
+    }
     strncpy(new_filename, filename, len - 3);
     new_filename[len - 3] = '\0';
     strcat(new_filename, ".am");
@@ -99,14 +122,14 @@ void pre_assembler(const char *filename)
     if (!input_file || !output_file)
     {
         perror("Failed to open files");
-        if (input_file)
-            fclose(input_file);
+        if (input_file) fclose(input_file);
+        free(new_filename);
         return;
     }
 
     char line[MAX_LINE_LENGTH];
     char macro_name[50];
-    char macro_content[MAX_LINES_PER_MACRO][MAX_LINE_LENGTH];
+    char **macro_content = NULL;
     int inside_macro = 0;
     int line_count = 0;
 
@@ -115,81 +138,82 @@ void pre_assembler(const char *filename)
         remove_extra_spaces(line);
         line[strcspn(line, "\n")] = '\0'; // הסרת תו סוף שורה
 
+         // 🔹 בדיקת הערות – אם השורה מתחילה ב-";" דלג עליה
+        if (line[0] == ';') {
+            continue;
+        }
+
         // בדיקה אם השורה ריקה
-        if (is_empty_line(line))
-        {
+        if (is_empty_line(line)) {
             continue; // דילוג על שורות ריקות
         }
 
-        if (strncmp(line, "mcro ", 5) == 0)
-        {
+        if (strncmp(line, "mcro ", 5) == 0) { 
             inside_macro = 1;
             line_count = 0;
             sscanf(line + 5, "%s", macro_name);
-        }
-        else if (inside_macro && strncmp(line, "mcroend ", 8) == 0)
-        {
+            macro_content = NULL;
+        } 
+        else if (inside_macro && strncmp(line, "mcroend", 7) == 0) { 
             add_macro(macro_name, macro_content, line_count);
             inside_macro = 0;
-        }
-        else if (inside_macro)
-        {
-            strncpy(macro_content[line_count++], line, MAX_LINE_LENGTH);
-        }
-        else
-        {
+
+            // שחרור הזיכרון הזמני ששימש לאחסון השורות
+            for (int i = 0; i < line_count; i++) {
+                free(macro_content[i]);
+            }
+            free(macro_content);
+        } 
+        else if (inside_macro) { 
+            macro_content = (char **)realloc(macro_content, (line_count + 1) * sizeof(char *));
+            if (!macro_content) {
+                printf("Memory allocation failed while storing macro content.\n");
+                exit(1);
+            }
+            macro_content[line_count] = strdup(line);
+            line_count++;
+        } 
+        else { 
             Macro *macro = find_macro(line);
-            if (macro)
-            {
-                for (int i = 0; i < macro->line_count; i++)
-                {
+            if (macro) { 
+                for (int i = 0; i < macro->line_count; i++) {
                     fputs(macro->content[i], output_file);
                     fputc('\n', output_file);
                 }
-            }
-            else
-            {
+            } 
+            else { 
                 fputs(line, output_file);
                 fputc('\n', output_file);
             }
         }
     }
+    printf("File %s processed and saved to %s\n", filename, new_filename);
 
     fclose(input_file);
     fclose(output_file);
-
-    printf("File %s processed and saved to %s\n", filename, new_filename);
+    free(new_filename);
 }
 
-const char *load_file(int flag, char *filename)
-{
-    static char filename_with_extension[256];
-    if (flag == 1)
-    {
-        printf("file name is:->%s\n", filename);
-        printf("the flag is:->%d\n", flag);
+// טעינת קובץ עם הקצאה דינאמית
+char *load_file(char *filename) {
 
-        snprintf(filename_with_extension, sizeof(filename_with_extension), "test-files/%s.am", filename);
-        FILE *file = fopen(filename_with_extension, "r");
-        if (file)
-        {
-            fclose(file);
-            return filename_with_extension;
-        }
+    char *filename_with_extension = (char *)malloc(strlen("test-files/") + strlen(filename) + strlen(".as") + 1);
+    if (!filename_with_extension) {
+        printf("Error: Memory allocation failed.\n");
+        return NULL;
     }
-    else{
-    snprintf(filename_with_extension, sizeof(filename_with_extension), "test-files/%s.as", filename);
+        sprintf(filename_with_extension, "test-files/%s.as", filename);
+
     FILE *file = fopen(filename_with_extension, "r");
     if (!file)
     {
         printf("Error: File %s does not exist. Skipping.\n", filename_with_extension);
+        free(filename_with_extension);
         return NULL;
     }
     fclose(file);
     return filename_with_extension;
     }
-    return NULL;
-}
 
 // פונקציה שבודקת את מספר השורות בקובץ .am ויוצרת קובץ .temp עם מספר השורות
 void check_the_file(const char *filename_ad)
@@ -209,22 +233,41 @@ void check_the_file(const char *filename_ad)
     }
     fclose(file);
 
-    // יצירת שם הקובץ עם סיומת .temp
-    char filename_ah[256];
-    strncpy(filename_ah, filename_ad, strlen(filename_ad) - 3);
-    filename_ah[strlen(filename_ad) - 3] = '\0';
-    strcat(filename_ah, ".temp");
+    char *filename_ah = (char *)malloc(strlen(filename_ad) + 3);
+    if (!filename_ah) {
+        printf("Memory allocation failed.\n");
+        return;
+    }
 
-    // כתיבת מספר השורות לקובץ .temp
+    sprintf(filename_ah, "%s.ah", filename_ad);
+    
     FILE *file_ah = fopen(filename_ah, "w");
     if (!file_ah)
     {
         printf("Error: Unable to open %s for writing.\n", filename_ah);
+        free(filename_ah);
         return;
     }
 
     fprintf(file_ah, "Number of lines: %d\n", line_count);
     fclose(file_ah);
+    free(filename_ah);
+}
 
-    printf("File %s created with %d lines.\n", filename_ah, line_count);
+// שחרור הזיכרון של הרשימה המקושרת
+void free_macros() {
+    Macro *current = head;
+    while (current) {
+        Macro *next = current->next;
+
+        free(current->name);
+        for (int i = 0; i < current->line_count; i++) {
+            free(current->content[i]);
+        }
+        free(current->content);
+        free(current);
+
+        current = next;
+    }
+    head = NULL;
 }
