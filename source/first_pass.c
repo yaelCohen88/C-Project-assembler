@@ -5,6 +5,6 @@
 void first_pass(char* file)
 {
     const char *filename_with_extension;
-    filename_with_extension = load_file(1, file);
+    filename_with_extension = load_file(file);
     printf("start first pass %s", filename_with_extension);
 }
